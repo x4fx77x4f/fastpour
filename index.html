@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+	:root {
+		font-family: sans-serif;
+	}
+	canvas {
+		border: 2px solid currentcolor;
+	}
+	@media screen and (prefers-color-scheme: dark) {
+		:root {
+			color-scheme: dark;
+			background: black;
+			color: #ddd;
+		}
+	}
+</style>
+<script src="fengari-web.js"></script>
+<script src="fastpour.js"></script>
+<canvas id="fp-viewport" width="960" height="540"></canvas>
+<br>
+<textarea id="fp-textarea" cols="80" rows="24">function draw()
+	local p = 8
+	UiTranslate(p, p)
+	UiFont("regular.ttf")
+	UiWordWrap(UiWidth()-p*2)
+	UiText("Hello, world!")
+end</textarea>
+<br>
+<button id="fp-start">Run</button>
+<button id="fp-stop">Stop</button>
