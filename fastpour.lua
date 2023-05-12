@@ -6,6 +6,7 @@ local console = window.console
 local filesystem = dofile("./filesystem.lua")
 
 local viewport = document:getElementById("fp-viewport")
+local ctx = assert(viewport:getContext("2d"))
 local textarea = document:getElementById("fp-textarea")
 local button_start = document:getElementById("fp-start")
 local button_stop = document:getElementById("fp-stop")
@@ -102,6 +103,26 @@ local function startui(path)
 	has_handleCommand = env.handleCommand ~= nil
 end
 
+local animation_id, draw, saved
+function draw(self)
+	if saved then
+		ctx:restore()
+	end
+	ctx:save()
+	saved = true
+	--ctx:reset()
+	local w, h = viewport.width, viewport.height
+	ctx.fillStyle = "black"
+	ctx:fillRect(0, 0, w, h)
+	local scale = math.min(w/1920, h/1080)
+	ctx:scale(scale, scale)
+	ctx.font = "16px monospace"
+	ctx.fillStyle = "white"
+	ctx:fillText("Hello, world!", 50, 670)
+	if animation_id ~= nil then
+		animation_id = window:requestAnimationFrame(draw)
+	end
+end
 button_start:addEventListener("click", function(self, event)
 	filesystem.filesystem = {}
 	assert(filesystem.mkdir("Y:/Teardown/data/ui", true))
@@ -109,4 +130,9 @@ button_start:addEventListener("click", function(self, event)
 	local path = "data/ui/fastpour.lua"
 	assert(filesystem.write(path, textarea.value))
 	startui(path)
+	animation_id = window:requestAnimationFrame(draw)
+end)
+button_stop:addEventListener("click", function(self, event)
+	window:cancelAnimationFrame(animation_id)
+	animation_id = nil
 end)
