@@ -35,7 +35,9 @@ local function copy(src, seen)
 	end
 	return dst
 end
-local function create_env(path)
+local DEBUG_LOG_MAX = 20
+local env, has_init, has_update, has_tick, has_draw, has_handleCommand, debug_log
+local function create_env()
 	local env = copy(_ENV)
 	env._COPYRIGHT = nil
 	env.debug = nil
@@ -76,18 +78,28 @@ local function create_env(path)
 		end
 		env.unpack = table.unpack
 	end
+	function env.DebugPrint(str)
+		if type(str) ~= "string" then return end
+		for i=1, DEBUG_LOG_MAX-1 do
+			debug_log[i] = debug_log[i+1]
+		end
+		debug_log[DEBUG_LOG_MAX] = str
+	end
 	return env
 end
-local env, has_init, has_update, has_tick, has_draw, has_handleCommand
 local function startui(path)
-	env = create_env(path)
+	debug_log = {}
+	for i=1, DEBUG_LOG_MAX do
+		debug_log[i] = ""
+	end
+	env = create_env()
 	local err
 	code, err = filesystem.read(path)
 	if code == nil then
 		console:error("failed to read file '%s' (%s); treating as empty", path, err)
 		code = ""
 	end
-	code, err = load(code, path)
+	code, err = load(code, path, "t", env)
 	if code == nil then
 		console:error("failed to compile: %s", tostring(err))
 		code = function() end
@@ -96,17 +108,25 @@ local function startui(path)
 	if not success then
 		console:error("script error: %s", tostring(err))
 	end
+	-- yes, i know this will trigger metamethods
 	has_init = env.init ~= nil
 	has_update = env.update ~= nil
 	has_tick = env.tick ~= nil
 	has_draw = env.draw ~= nil
 	has_handleCommand = env.handleCommand ~= nil
+	if has_init then
+		success, err = pcall(env.init)
+		if not success then
+			console:error("script error: %s", tostring(err))
+		end
+	end
 end
 
 local animation_id, draw, saved
 function draw(self)
 	if saved then
 		ctx:restore()
+		saved = false
 	end
 	ctx:save()
 	saved = true
@@ -118,12 +138,18 @@ function draw(self)
 	ctx:scale(scale, scale)
 	ctx.font = "16px monospace"
 	ctx.fillStyle = "white"
-	ctx:fillText("Hello, world!", 50, 670)
+	for i=1, DEBUG_LOG_MAX do
+		ctx:fillText(debug_log[i], 50, 670+(i-1)*18)
+	end
 	if animation_id ~= nil then
 		animation_id = window:requestAnimationFrame(draw)
 	end
 end
 button_start:addEventListener("click", function(self, event)
+	if animation_id ~= nil then
+		window:cancelAnimationFrame(animation_id)
+		animation_id = nil
+	end
 	filesystem.filesystem = {}
 	assert(filesystem.mkdir("Y:/Teardown/data/ui", true))
 	filesystem.cwd = filesystem.resolve("Y:/Teardown/")
@@ -133,6 +159,9 @@ button_start:addEventListener("click", function(self, event)
 	animation_id = window:requestAnimationFrame(draw)
 end)
 button_stop:addEventListener("click", function(self, event)
+	if animation_id == nil then
+		return
+	end
 	window:cancelAnimationFrame(animation_id)
 	animation_id = nil
 end)
