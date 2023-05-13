@@ -20,12 +20,10 @@
 <script src="fastpour.lua" type="application/lua" async defer></script>
 <canvas id="fp-viewport" width="960" height="540"></canvas>
 <br>
-<textarea id="fp-textarea" cols="80" rows="24">function draw()
-	local p = 8
-	UiTranslate(p, p)
-	UiFont("regular.ttf")
-	UiWordWrap(UiWidth()-p*2)
-	UiText("Hello, world!")
+<textarea id="fp-textarea" cols="80" rows="24">function init()
+	for i=1, 20 do
+		DebugPrint("Hello, world! "..i)
+	end
 end</textarea>
 <br>
 <button id="fp-start">Start</button>
