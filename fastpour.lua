@@ -36,7 +36,13 @@ local function copy(src, seen)
 	return dst
 end
 local DEBUG_LOG_MAX = 20
-local env, has_init, has_update, has_tick, has_draw, has_handleCommand, debug_log
+local env, has, debug_log
+local function debugprint(str)
+	for i=1, DEBUG_LOG_MAX-1 do
+		debug_log[i] = debug_log[i+1]
+	end
+	debug_log[DEBUG_LOG_MAX] = str
+end
 local function create_env()
 	local env = copy(_ENV)
 	env._COPYRIGHT = nil
@@ -80,12 +86,21 @@ local function create_env()
 	end
 	function env.DebugPrint(str)
 		if type(str) ~= "string" then return end
-		for i=1, DEBUG_LOG_MAX-1 do
-			debug_log[i] = debug_log[i+1]
-		end
-		debug_log[DEBUG_LOG_MAX] = str
+		return debugprint(str)
 	end
 	return env
+end
+local function env_pcall(k, ...)
+	if not has[k] then
+		return
+	end
+	local func = env[k]
+	local success, err = pcall(func, ...)
+	if not success then
+		err = tostring(err)
+		console:error("script error: %s", err)
+		debugprint(err)
+	end
 end
 local function startui(path)
 	debug_log = {}
@@ -109,21 +124,17 @@ local function startui(path)
 		console:error("script error: %s", tostring(err))
 	end
 	-- yes, i know this will trigger metamethods
-	has_init = env.init ~= nil
-	has_update = env.update ~= nil
-	has_tick = env.tick ~= nil
-	has_draw = env.draw ~= nil
-	has_handleCommand = env.handleCommand ~= nil
-	if has_init then
-		success, err = pcall(env.init)
-		if not success then
-			console:error("script error: %s", tostring(err))
-		end
-	end
+	has = {}
+	has.init = env.init ~= nil
+	has.update = env.update ~= nil
+	has.tick = env.tick ~= nil
+	has.draw = env.draw ~= nil
+	has.handleCommand = env.handleCommand ~= nil
+	env_pcall("init")
 end
 
-local animation_id, draw, saved
-function draw(self)
+local animation_id, draw, saved, last
+function draw(self, now)
 	if saved then
 		ctx:restore()
 		saved = false
@@ -136,6 +147,14 @@ function draw(self)
 	ctx:fillRect(0, 0, w, h)
 	local scale = math.min(w/1920, h/1080)
 	ctx:scale(scale, scale)
+	now = now/1000
+	if last == nil then
+		last = now
+	end
+	local dt = now-last
+	env_pcall("tick", dt)
+	env_pcall("draw", dt)
+	last = now
 	ctx.font = "16px monospace"
 	ctx.fillStyle = "white"
 	for i=1, DEBUG_LOG_MAX do
