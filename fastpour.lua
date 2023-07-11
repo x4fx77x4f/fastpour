@@ -171,7 +171,7 @@ button_start:addEventListener("click", function(self, event)
 		animation_id = nil
 	end
 	assert(my_filesystem:mkdir("Y:/Teardown/data/ui", true))
-	my_filesystem.cwd = my_filesystem:resolve("Y:/Teardown/")
+	my_filesystem:cd("Y:/Teardown/")
 	local path = "data/ui/fastpour.lua"
 	assert(my_filesystem:write(path, textarea.value))
 	startui(path)

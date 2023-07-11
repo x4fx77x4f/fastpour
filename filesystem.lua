@@ -146,5 +146,17 @@ function filesystem:mkdir(path, make_ascendants)
 	end
 	return true
 end
+function filesystem:cd(path)
+	local wd = self:resolve(path)
+	local node = self.root
+	for i=1, #wd do
+		node = node[wd[i]]
+		if type(node) ~= "table" then
+			return false, "not a directory"
+		end
+	end
+	self.cwd = wd
+	return true
+end
 
 return filesystem
