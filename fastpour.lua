@@ -4,17 +4,20 @@ local document = window.document
 local console = window.console
 
 local function ypcall(func, ...)
-	return xpcall(func, function(err)
+	local args, j = {...}, select("#", ...)
+	return xpcall(function()
+		return func(table.unpack(args, 1, j)) -- this is so awful
+	end, function(err)
 		err = debug.traceback(err, 2)
 		console:error(err)
-	end, ...)
+	end)
 end
 local function ypcall_wrap(func)
 	return function(...)
 		return ypcall(func, ...)
 	end
 end
-ypcall(function()
+ypcall(function(...)
 
 local client = dofile("./client.lua")
 
@@ -26,7 +29,7 @@ local button_stop = document:getElementById("fp-stop")
 local checkbox_lua51 = document:getElementById("fp-lua51")
 
 local animation_id, saved, my_client
-function draw(self, now)
+local function draw(self, now)
 	if saved then
 		ctx:restore()
 		saved = false
@@ -39,6 +42,7 @@ function draw(self, now)
 		animation_id = window:requestAnimationFrame(draw)
 	end
 end
+draw = ypcall_wrap(draw)
 button_start:addEventListener("click", ypcall_wrap(function(self, event)
 	if animation_id ~= nil then
 		window:cancelAnimationFrame(animation_id)
@@ -52,7 +56,7 @@ button_start:addEventListener("click", ypcall_wrap(function(self, event)
 	client.ctx = ctx
 	client.width = viewport.width
 	client.height = viewport.height
-	animation_id = window:requestAnimationFrame(ypcall_wrap(draw))
+	animation_id = window:requestAnimationFrame(draw)
 end))
 button_stop:addEventListener("click", ypcall_wrap(function(self, event)
 	if animation_id == nil then
@@ -62,4 +66,4 @@ button_stop:addEventListener("click", ypcall_wrap(function(self, event)
 	animation_id = nil
 end))
 
-end)
+end, ...)

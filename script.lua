@@ -83,7 +83,14 @@ local function assert_argument(condition, i, str, level)
 end
 script._assert_argument = assert_argument
 script.libraries = {
-	dofile("./api/miscellaneous.lua"),
+	--dofile("./api/parameters.lua"),
+	dofile("./api/control.lua"),
+	--dofile("./api/registry.lua"),
+	--dofile("./api/vector.lua"),
+	--dofile("./api/screen.lua"),
+	--dofile("./api/sound.lua"),
+	dofile("./api/misc.lua"),
+	--dofile("./api/ui.lua"),
 }
 function script:env_init()
 	local env = {}

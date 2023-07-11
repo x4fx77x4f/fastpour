@@ -9,6 +9,7 @@ function client.new()
 		game_path = "Y:/Teardown/",
 		mod_path = "mods/fastpour/",
 		debug_log = {},
+		buildid = 11527952,
 	}, client)
 end
 
@@ -22,6 +23,7 @@ client.STATE_INVALID = 7
 client.DEBUG_LOG_MAX = 20
 
 function client:init()
+	assert(self.buildid == 11527952)
 	local my_filesystem = filesystem.new()
 	self.filesystem = my_filesystem
 	local game_path = self.game_path
@@ -77,6 +79,8 @@ function client:tick(now)
 	end
 	local dt = now-last
 	local script = self.script
+	self.now = now
+	self.dt = dt
 	script:callback_call("tick", dt)
 	script:callback_call("draw", dt)
 	self.last = now
