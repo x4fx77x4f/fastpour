@@ -10,6 +10,7 @@ function client.new()
 		mod_path = "mods/fastpour/",
 		debug_log = {},
 		buildid = 11527952,
+		env_spoof_lua51 = true,
 	}, client)
 end
 
@@ -60,10 +61,14 @@ function client:start_ui(path)
 	self:debug_clear()
 	local my_script = script.new(self)
 	self.script = my_script
+	my_script.ctx = self.ctx
+	my_script.env_spoof_lua51 = self.env_spoof_lua51
 	my_script:env_init()
 	my_script:dofile(path)
 	my_script:callback_init()
-	--if my_script.callbacks.draw then
+	if my_script.callbacks.draw then
+		my_script.libraries.ui(my_script, my_script.env)
+	end
 	my_script:callback_call("init")
 end
 function client:tick(now)
@@ -81,8 +86,11 @@ function client:tick(now)
 	local script = self.script
 	self.now = now
 	self.dt = dt
+	ctx:save()
+	--script:callback_call("update", dt) -- TODO
 	script:callback_call("tick", dt)
 	script:callback_call("draw", dt)
+	ctx:restore()
 	self.last = now
 	ctx.font = "16px monospace"
 	ctx.fillStyle = "white"

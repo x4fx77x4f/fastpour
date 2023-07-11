@@ -27,6 +27,7 @@ local textarea = document:getElementById("fp-textarea")
 local button_start = document:getElementById("fp-start")
 local button_stop = document:getElementById("fp-stop")
 local checkbox_lua51 = document:getElementById("fp-lua51")
+local checkbox_strict = document:getElementById("fp-strict")
 
 local animation_id, saved, my_client
 local function draw(self, now)
@@ -49,13 +50,15 @@ button_start:addEventListener("click", ypcall_wrap(function(self, event)
 		animation_id = nil
 	end
 	my_client = client.new()
+	my_client.strict = checkbox_strict.checked
+	my_client.env_spoof_lua51 = checkbox_lua51.checked
+	client.ctx = ctx
+	client.width = viewport.width
+	client.height = viewport.height
 	my_client:init()
 	local path = my_client.mod_path.."/options.lua"
 	my_client.filesystem:write(path, textarea.value)
 	my_client:start_ui(path)
-	client.ctx = ctx
-	client.width = viewport.width
-	client.height = viewport.height
 	animation_id = window:requestAnimationFrame(draw)
 end))
 button_stop:addEventListener("click", ypcall_wrap(function(self, event)

@@ -34,6 +34,7 @@ function script.new(client)
 	return setmetatable({
 		client = client,
 		callbacks = {},
+		strict = false,
 	}, script)
 end
 
@@ -50,38 +51,111 @@ local function get_name(level)
 	return info.name
 end
 script._get_name = get_name
-local function assert_select_type(i, expected, ...)
+local function select_type(i, expected, ...)
 	local value = select(i, ...)
 	local actual = type(value)
 	if select("#", ...) < i then
 		actual = "no value"
 	end
 	if actual == expected then
-		return value
+		return true, value
 	elseif type(expected) == "table" then
 		for i=1, #expected do
 			if expected[i] == actual then
-				return value
+				return true, value
 			end
 		end
 		expected = expected[1]
 	end
-	error(string.format("bad argument #%d to '%s' (expected %s, got %s)", i, get_name(), expected, actual), 3)
+	return false
+end
+local function assert_select_type(i, expected, level, ...)
+	local success, value = select_type(i, expected, ...)
+	if success then
+		return value
+	end
+	if level == nil then
+		level = 2
+	end
+	level = level+1
+	error(string.format("bad argument #%d to '%s' (expected %s, got %s)", i, get_name(), expected, actual), level)
 end
 script._assert_select_type = assert_select_type
-local function assert_vararg(...)
+local function assert_vararg(level, ...)
 	if select("#", ...) == 0 then
-		error(string.format("bad argument #1 to '%s' (value expected)", get_name()), 3)
+		if level == nil then
+			level = 2
+		end
+		level = level+1
+		error(string.format("bad argument #1 to '%s' (value expected)", get_name()), level)
 	end
 	return ...
 end
 script._assert_vararg = assert_vararg
 local function assert_argument(condition, i, str, level)
 	if not condition then
-		error(string.format("bad argument #%d to '%s' (%s)", i, get_name(), str), 3)
+		if level == nil then
+			level = 2
+		end
+		level = level+1
+		error(string.format("bad argument #%d to '%s' (%s)", i, get_name(), str), level)
 	end
 end
 script._assert_argument = assert_argument
+local weak_lookup = {
+	number = 0,
+	string = "",
+}
+script._weak_lookup = weak_lookup
+function script:_weak_assert_select_type(i, expected, level, ...)
+	local success, value = select_type(i, expected, ...)
+	if not success then
+		if self.strict then
+			if level == nil then
+				level = 2
+			end
+			level = level+1
+			error(string.format("bad argument #%d to '%s' (expected %s, got %s)", i, get_name(), expected, actual), level)
+		end
+		if type(expected) == "table" then
+			value = weak_lookup[expected[1]]
+		else
+			value = weak_lookup[expected]
+		end
+	end
+	return value
+end
+function script:_weak_assert_vararg(level, ...)
+	if not self.strict then
+		return ...
+	elseif select("#", ...) == 0 then
+		if level == nil then
+			level = 2
+		end
+		level = level+1
+		error(string.format("bad argument #1 to '%s' (value expected)", get_name()), level)
+	end
+	return ...
+end
+function script:_weak_assert_argument(condition, i, str, level)
+	if self.strict and not condition then
+		if level == nil then
+			level = 2
+		end
+		level = level+1
+		error(string.format("bad argument #%d to '%s' (%s)", i, get_name(), str), level)
+	end
+end
+function script._to_sane(n, level)
+	if
+		n == math.huge
+		or n == -math.huge
+		or n ~= n
+	then
+		return nil
+	end
+	return n
+end
 script.libraries = {
 	--dofile("./api/parameters.lua"),
 	dofile("./api/control.lua"),
@@ -90,7 +164,7 @@ script.libraries = {
 	--dofile("./api/screen.lua"),
 	--dofile("./api/sound.lua"),
 	dofile("./api/misc.lua"),
-	--dofile("./api/ui.lua"),
+	ui = dofile("./api/ui.lua"),
 }
 function script:env_init()
 	local env = {}
@@ -117,8 +191,8 @@ function script:env_init()
 			env.collectgarbage = nil
 		end
 		function env.load(...)
-			local func = assert_select_type(1, "function", ...)
-			local name = assert_select_type(2, {"string", "nil"}, ...)
+			local func = assert_select_type(1, "function", nil, ...)
+			local name = assert_select_type(2, {"string", "nil"}, nil, ...)
 			local chunk = {}
 			local i = 0
 			while true do
@@ -140,8 +214,8 @@ function script:env_init()
 			return load(func, name, "t", env)
 		end
 		function env.loadstring(...)
-			local str = assert_select_type(1, "string", ...)
-			local name = assert_select_type(2, {"string", "nil"}, ...)
+			local str = assert_select_type(1, "string", nil, ...)
+			local name = assert_select_type(2, {"string", "nil"}, nil, ...)
 			if string.byte(str, 1, 1) == 0x1b then
 				error("not implemented", 2)
 			end
@@ -151,46 +225,46 @@ function script:env_init()
 			return load(str, name, "t", env)
 		end
 		function env.math.atan2(...)
-			local x = assert_select_type(1, "number", ...)
+			local x = assert_select_type(1, "number", nil, ...)
 			return math.atan(x)
 		end
 		function env.math.atan2(...)
-			local y = assert_select_type(2, "number", ...)
-			local x = assert_select_type(1, "number", ...)
+			local y = assert_select_type(2, "number", nil, ...)
+			local x = assert_select_type(1, "number", nil, ...)
 			return math.atan(x, y)
 		end
 		function env.math.cosh(...)
-			local x = assert_select_type(1, "number", ...)
+			local x = assert_select_type(1, "number", nil, ...)
 			return Math:cosh(x)
 		end
 		-- TODO: math.frexp
 		function env.math.ldexp(...)
-			local e = assert_select_type(2, "number", ...)
-			local m = assert_select_type(1, "number", ...)
+			local e = assert_select_type(2, "number", nil, ...)
+			local m = assert_select_type(1, "number", nil, ...)
 			return m*(2.^math.floor(e))
 		end
 		function env.math.log(...)
-			local x = assert_select_type(1, "number", ...)
+			local x = assert_select_type(1, "number", nil, ...)
 			return math.log(x)
 		end
 		function env.math.log10(...)
-			local x = assert_select_type(1, "number", ...)
+			local x = assert_select_type(1, "number", nil, ...)
 			return math.log(x, 10)
 		end
 		env.math.maxinteger = nil
 		env.math.mininteger = nil
 		env.math.mod = math.fmod
 		function env.math.pow(...)
-			local y = assert_select_type(2, "number", ...)
-			local x = assert_select_type(1, "number", ...)
+			local y = assert_select_type(2, "number", nil, ...)
+			local x = assert_select_type(1, "number", nil, ...)
 			return x^y
 		end
 		function env.math.sinh(...)
-			local x = assert_select_type(1, "number", ...)
+			local x = assert_select_type(1, "number", nil, ...)
 			return Math:sinh(x)
 		end
 		function env.math.tanh(...)
-			local x = assert_select_type(1, "number", ...)
+			local x = assert_select_type(1, "number", nil, ...)
 			return Math:tanh(x)
 		end
 		env.math.tointeger = nil
@@ -198,7 +272,7 @@ function script:env_init()
 		env.math.ult = nil
 		env.rawlen = nil
 		function env.string.dump(...)
-			local func = assert_select_type(1, "function", ...)
+			local func = assert_select_type(1, "function", nil, ...)
 			local info = debug.getinfo(func, "Su")
 			if info.what ~= "Lua" then
 				error("unable to dump given function", 2)
@@ -219,8 +293,8 @@ function script:env_init()
 		env.string.packsize = nil
 		env.string.unpack = nil
 		function env.table.foreach(...)
-			local tbl = assert_select_type(1, "table", ...)
-			local func = assert_select_type(2, "function", ...)
+			local tbl = assert_select_type(1, "table", nil, ...)
+			local func = assert_select_type(2, "function", nil, ...)
 			for k, v in pairs(tbl) do
 				local retval = func(k, v)
 				if retval ~= nil then
@@ -229,8 +303,8 @@ function script:env_init()
 			end
 		end
 		function env.table.foreachi(...)
-			local tbl = assert_select_type(1, "table", ...)
-			local func = assert_select_type(2, "function", ...)
+			local tbl = assert_select_type(1, "table", nil, ...)
+			local func = assert_select_type(2, "function", nil, ...)
 			local j = #tbl
 			for i=1, j do
 				local retval = func(i, tbl[i])
@@ -240,11 +314,11 @@ function script:env_init()
 			end
 		end
 		function env.table.getn(...)
-			local tbl = assert_select_type(1, "table", ...)
+			local tbl = assert_select_type(1, "table", nil, ...)
 			return #tbl
 		end
 		function env.table.maxn(...)
-			local tbl = assert_select_type(1, "table", ...)
+			local tbl = assert_select_type(1, "table", nil, ...)
 			local i = 0
 			for k in pairs(tbl) do
 				if k ~= k then
@@ -259,14 +333,14 @@ function script:env_init()
 		env.table.move = nil
 		env.table.pack = nil
 		function env.table.setn(...)
-			local tbl = assert_select_type(1, "table", ...)
+			local tbl = assert_select_type(1, "table", nil, ...)
 			error("'setn' is obsolete", 2)
 		end
 		env.table.unpack = nil
 		env.unpack = table.unpack
 		env.utf8 = nil
 		function env.getfenv(...)
-			local location = assert_select_type(1, {"number", "function", "nil", "no value"}, ...)
+			local location = assert_select_type(1, {"number", "function", "nil", "no value"}, nil, ...)
 			if location == 0 then
 				return env
 			end
@@ -301,8 +375,8 @@ function script:env_init()
 			return env
 		end
 		function env.setfenv(...)
-			local fenv = assert_select_type(2, "table", ...)
-			local location = assert_select_type(1, {"number", "function"}, ...)
+			local fenv = assert_select_type(2, "table", nil, ...)
+			local location = assert_select_type(1, {"number", "function"}, nil, ...)
 			if
 				location == nil
 				or location == math.huge
@@ -341,10 +415,10 @@ function script:env_init()
 			env.collectgarbage = nil
 		end
 		function env.load(...)
-			local chunk = assert_select_type(1, {"function", "string"}, ...)
-			local name = assert_select_type(2, {"string", "no value", "nil"}, ...)
-			local mode = assert_select_type(3, {"string", "no value", "nil"}, ...)
-			local fenv = assert_select_type(4, {"table", "no value", "nil"}, ...)
+			local chunk = assert_select_type(1, {"function", "string"}, nil, ...)
+			local name = assert_select_type(2, {"string", "no value", "nil"}, nil, ...)
+			local mode = assert_select_type(3, {"string", "no value", "nil"}, nil, ...)
+			local fenv = assert_select_type(4, {"table", "no value", "nil"}, nil, ...)
 			if type(chunk) == "function" then
 				local func = chunk
 				chunk = {}
@@ -386,7 +460,7 @@ function script:env_init()
 			return load(chunk, name, mode, fenv)
 		end
 		function env.string.dump(...)
-			local func = assert_select_type(1, "function", ...)
+			local func = assert_select_type(1, "function", nil, ...)
 			local strip = not not select(2, ...)
 			local info = debug.getinfo(func, "Su")
 			if info.what ~= "Lua" then
