@@ -1,5 +1,3 @@
-local filesystem = {}
-
 local function split(str, separator)
 	local tbl, tbl_i, str_i = {}, 0, 1
 	while true do
@@ -15,6 +13,15 @@ local function split(str, separator)
 	return tbl
 end
 
+local filesystem = {}
+filesystem.__index = filesystem
+function filesystem.new()
+	return setmetatable({
+		root = {},
+		cwd = {},
+	}, filesystem)
+end
+
 local reserved_names = {
 	con = true,
 	prn = true,
@@ -22,11 +29,14 @@ local reserved_names = {
 	nul = true,
 }
 for i=0, 9 do
-	reserved_names["com"..i] = true
-	reserved_names["lpt"..i] = true
+	reserved_names[string.format("com%d", i)] = true
+	reserved_names[string.format("lpt%d", i)] = true
 end
 setmetatable(reserved_names, {
 	__index = function(self, k)
+		if type(k) ~= "string" then
+			return
+		end
 		local i = string.find(k, ".", 1, true)
 		if i ~= nil then
 			k = string.sub(k, 1, i-1)
@@ -71,25 +81,26 @@ local function path_info(path)
 end
 filesystem.path_info = path_info
 
-function filesystem.resolve(path)
+function filesystem:resolve(path)
 	local valid, absolute, traversal, directory
 	path, valid, absolute, traversal, directory = path_info(path)
+	local cwd = self.cwd
 	if absolute == true then
-		table.insert(path, 1, filesystem.cwd[1])
+		table.insert(path, 1, cwd[1])
 	elseif not absolute then
-		for i=1, #filesystem.cwd do
-			table.insert(path, i, filesystem.cwd[i])
+		for i=1, #cwd do
+			table.insert(path, i, cwd[i])
 		end
 	end
 	return path, valid, absolute, traversal, directory
 end
-function filesystem.read(path)
+function filesystem:read(path)
 	local valid, absolute, traversal, directory
-	path, valid, absolute, traversal, directory = filesystem.resolve(path)
+	path, valid, absolute, traversal, directory = self:resolve(path)
 	if not valid then
 		return nil, "malformed path", path, valid, absolute, traversal, directory
 	end
-	local node = filesystem.filesystem
+	local node = self.root
 	for i=1, #path-1 do
 		node = node[path[i]]
 		if type(node) ~= "table" then
@@ -99,13 +110,13 @@ function filesystem.read(path)
 	node = node[path[#path]]
 	return node, "no such file", path, valid, absolute, traversal, directory
 end
-function filesystem.write(path, data)
+function filesystem:write(path, data)
 	local valid, absolute, traversal, directory
-	path, valid, absolute, traversal, directory = filesystem.resolve(path)
+	path, valid, absolute, traversal, directory = self:resolve(path)
 	if not valid then
 		return false, "malformed path", path, valid, absolute, traversal, directory
 	end
-	local node = filesystem.filesystem
+	local node = self.root
 	for i=1, #path-1 do
 		node = node[path[i]]
 		if type(node) ~= "table" then
@@ -115,13 +126,13 @@ function filesystem.write(path, data)
 	node[path[#path]] = data
 	return true
 end
-function filesystem.mkdir(path, make_ascendants)
+function filesystem:mkdir(path, make_ascendants)
 	local valid, absolute, traversal, directory
-	path, valid, absolute, traversal, directory = filesystem.resolve(path)
+	path, valid, absolute, traversal, directory = self:resolve(path)
 	if not valid then
 		return false, "malformed path", path, valid, absolute, traversal, directory
 	end
-	local node = filesystem.filesystem
+	local node = self.root
 	for i=1, #path do
 		local path_segment = path[i]
 		local next_node = node[path_segment]

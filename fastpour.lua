@@ -4,6 +4,7 @@ local document = window.document
 local console = window.console
 
 local filesystem = dofile("./filesystem.lua")
+local my_filesystem = filesystem.new()
 
 local viewport = document:getElementById("fp-viewport")
 local ctx = assert(viewport:getContext("2d"))
@@ -109,7 +110,7 @@ local function startui(path)
 	end
 	env = create_env()
 	local err
-	code, err = filesystem.read(path)
+	code, err = my_filesystem:read(path)
 	if code == nil then
 		console:error("failed to read file '%s' (%s); treating as empty", path, err)
 		code = ""
@@ -169,11 +170,10 @@ button_start:addEventListener("click", function(self, event)
 		window:cancelAnimationFrame(animation_id)
 		animation_id = nil
 	end
-	filesystem.filesystem = {}
-	assert(filesystem.mkdir("Y:/Teardown/data/ui", true))
-	filesystem.cwd = filesystem.resolve("Y:/Teardown/")
+	assert(my_filesystem:mkdir("Y:/Teardown/data/ui", true))
+	my_filesystem.cwd = my_filesystem:resolve("Y:/Teardown/")
 	local path = "data/ui/fastpour.lua"
-	assert(filesystem.write(path, textarea.value))
+	assert(my_filesystem:write(path, textarea.value))
 	startui(path)
 	animation_id = window:requestAnimationFrame(draw)
 end)
