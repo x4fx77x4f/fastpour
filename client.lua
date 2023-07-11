@@ -62,6 +62,7 @@ function client:start_ui(path)
 	my_script:dofile(path)
 	my_script:callback_init()
 	--if my_script.callbacks.draw then
+	my_script:callback_call("init")
 end
 function client:tick(now)
 	local ctx = self.ctx
