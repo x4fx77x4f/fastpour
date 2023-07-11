@@ -17,8 +17,10 @@ local filesystem = {}
 filesystem.__index = filesystem
 function filesystem.new()
 	return setmetatable({
-		root = {},
-		cwd = {},
+		root = {
+			["c:"] = {},
+		},
+		cwd = {"c:"},
 	}, filesystem)
 end
 
