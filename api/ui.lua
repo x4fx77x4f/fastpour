@@ -57,15 +57,77 @@ return function(self, env)
 	-- UiWorldToPixel
 	-- UiPixelToWorld
 	-- UiBlur
-	-- UiFont
-	-- UiFontHeight
-	-- UiText
+	local client = self.client
+	local my_filesystem = client.filesystem
+	local game_path = client.game_path
+	my_filesystem:write(game_path.."/data/ui/font/regular.ttf", "normal %dpx Lato, sans-serif")
+	my_filesystem:write(game_path.."/data/ui/font/bold.ttf", "bold %dpx Lato, sans-serif")
+	my_filesystem:write(game_path.."/data/ui/font/RobotoMono-Regular.ttf", "normal %dpx \"Roboto Mono\", monospace, monospace")
+	function env.UiFont(...)
+		-- TODO: edge cases
+		local path = weak_assert_select_type(self, 1, "string", nil, ...)
+		local font, err = my_filesystem:read(game_path.."/data/ui/font/"..path)
+		if font == nil then
+			weak_assert_argument(self, false, 1, err)
+			return
+		end
+		local size = weak_assert_select_type(self, 2, "number", nil, ...)
+		if size < 10 or size > 100 then
+			weak_assert_argument(self, false, 2, "out of range")
+			return
+		end
+		font = string.format(font, size)
+		self.font = font
+		self.font_size = size
+		ctx.font = font
+	end
+	function env.UiFontHeight(...)
+		-- TODO: edge cases; i don't think this is exactly right
+		local size = self.font_size
+		if size == nil then
+			if self.strict then
+				error("no font set", 2)
+			end
+			return
+		end
+		return size
+	end
+	function env.UiText(...)
+		-- TODO: edge cases, align
+		local text = weak_assert_select_type(self, 1, "string", nil, ...)
+		if text == nil then
+			text = ""
+		end
+		local move = weak_assert_select_type(self, 2, {"boolean", "no value", "nil"}, nil, ...)
+		local w, h = 0, 0
+		local size = self.font_size
+		local i = 1
+		while true do
+			local j = string.find(text, "\n", i, true)
+			local line
+			if j ~= nil then
+				line = string.sub(text, i, j-1)
+			else
+				line = string.sub(text, i)
+			end
+			ctx:fillText(text, 0, 0)
+			local metrics = ctx:measureText(text)
+			w, h = math.max(w, metrics.width), h+size
+			if j == nil then
+				break
+			end
+		end
+		if move then
+			ctx:translate(0, h)
+		end
+		return w, h
+	end
 	-- UiGetTextSize
 	-- UiWordWrap
 	-- UiTextOutline
 	-- UiTextShadow
 	function env.UiRect(...)
-		-- TODO: edge cases
+		-- TODO: edge cases, align
 		local w = weak_assert_select_type(self, 1, "number", nil, ...)
 		weak_assert_argument(self, to_sane(w), 1, "out of range")
 		local h = weak_assert_select_type(self, 2, "number", nil, ...)

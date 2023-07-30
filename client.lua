@@ -1,5 +1,7 @@
-local filesystem = dofile("./filesystem.lua")
-local script = dofile("./script.lua")
+local fastpour = fastpour
+local cachebuster = fastpour.cachebuster
+local filesystem = dofile("./filesystem.lua"..cachebuster)
+local script = dofile("./script.lua"..cachebuster)
 
 local client = {}
 client.__index = client
@@ -32,6 +34,7 @@ function client:init()
 	assert(my_filesystem:cd(game_path))
 	local mod_path = self.mod_path
 	assert(my_filesystem:mkdir(mod_path, true))
+	assert(my_filesystem:mkdir("data/ui/font/", true))
 end
 function client:debug_clear()
 	local debug_log = self.debug_log
@@ -63,6 +66,7 @@ function client:start_ui(path)
 	self.script = my_script
 	my_script.ctx = self.ctx
 	my_script.env_spoof_lua51 = self.env_spoof_lua51
+	my_script.strict = self.strict
 	my_script:env_init()
 	my_script:dofile(path)
 	my_script:callback_init()
@@ -87,12 +91,15 @@ function client:tick(now)
 	self.now = now
 	self.dt = dt
 	ctx:save()
+	script.font = nil
+	script.font_size = nil
+	ctx.fillStyle = "white"
 	--script:callback_call("update", dt) -- TODO
 	script:callback_call("tick", dt)
 	script:callback_call("draw", dt)
 	ctx:restore()
 	self.last = now
-	ctx.font = "16px monospace"
+	ctx.font = "normal 16px monospace, monospace"
 	ctx.fillStyle = "white"
 	local debug_log = self.debug_log
 	for i=1, self.DEBUG_LOG_MAX do

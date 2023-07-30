@@ -20,16 +20,12 @@
 <script src="fastpour.lua" type="application/lua" async defer></script>
 <canvas id="fp-viewport" width="960" height="540"></canvas>
 <br>
-<textarea id="fp-textarea" cols="80" rows="24">function init()
-	for i=1, 20 do
-		DebugPrint("Hello, world! "..i)
+<textarea id="fp-textarea" cols="80" rows="24">function draw(dt)
+	UiFont("regular.ttf", 24)
+	UiTranslate(0, UiFontHeight())
+	for i=1, 10 do
+		UiText(string.format("Line %d", i), true)
 	end
-end
-function tick(dt)
-	DebugPrint("tick: dt: "..dt)
-end
-function draw(dt)
-	DebugPrint("draw: dt: "..dt)
 end
 </textarea>
 <br>

@@ -1,4 +1,6 @@
-local builds = dofile("./builds.lua")
+local fastpour = fastpour
+local cachebuster = fastpour.cachebuster
+local builds = dofile("./builds.lua"..cachebuster)
 return function(self, env)
 	function env.GetVersion()
 		-- TODO: does writing to game.version affect this?

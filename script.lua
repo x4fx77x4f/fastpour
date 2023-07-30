@@ -1,3 +1,4 @@
+local fastpour = fastpour
 local js = require("js")
 local window = js.global
 local Math = window.Math
@@ -156,15 +157,16 @@ function script._to_sane(n, level)
 	end
 	return n
 end
+local cachebuster = fastpour.cachebuster
 script.libraries = {
-	--dofile("./api/parameters.lua"),
-	dofile("./api/control.lua"),
-	--dofile("./api/registry.lua"),
-	--dofile("./api/vector.lua"),
-	--dofile("./api/screen.lua"),
-	--dofile("./api/sound.lua"),
-	dofile("./api/misc.lua"),
-	ui = dofile("./api/ui.lua"),
+	--dofile("./api/parameters.lua"..cachebuster),
+	dofile("./api/control.lua"..cachebuster),
+	--dofile("./api/registry.lua"..cachebuster),
+	--dofile("./api/vector.lua"..cachebuster),
+	--dofile("./api/screen.lua"..cachebuster),
+	--dofile("./api/sound.lua"..cachebuster),
+	dofile("./api/misc.lua"..cachebuster),
+	ui = dofile("./api/ui.lua"..cachebuster),
 }
 function script:env_init()
 	local env = {}
@@ -179,7 +181,7 @@ function script:env_init()
 	env.os = nil
 	env.package = nil
 	env.require = nil
-	env.fengari = nil
+	env.fastpour = nil
 	env.js = nil
 	if self.env_spoof_lua51 then
 		env._VERSION = "Lua 5.1"

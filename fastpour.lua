@@ -1,7 +1,12 @@
+assert(fastpour == nil)
+local fastpour = {}
+_ENV.fastpour = fastpour
+
 local js = require("js")
 local window = js.global
 local document = window.document
 local console = window.console
+local location = window.location
 
 local function ypcall(func, ...)
 	local args, j = {...}, select("#", ...)
@@ -19,7 +24,13 @@ local function ypcall_wrap(func)
 end
 ypcall(function(...)
 
-local client = dofile("./client.lua")
+local cachebuster = ""
+if location.hostname == "localhost" then
+	cachebuster = string.format("?cb=%x", math.random(0, math.maxinteger))
+end
+fastpour.cachebuster = cachebuster
+
+local client = dofile("./client.lua"..cachebuster)
 
 local viewport = document:getElementById("fp-viewport")
 local ctx = assert(viewport:getContext("2d"))
