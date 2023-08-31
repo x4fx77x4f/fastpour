@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
+<html lang="en">
+<head>
+<meta charset="UTF-8">
 <title>Fastpour</title>
 <style>
 	:root {
@@ -18,7 +20,9 @@
 </style>
 <script src="fengari-web.js"></script>
 <script src="fastpour.lua" type="application/lua" async defer></script>
-<canvas id="fp-viewport" width="960" height="540"></canvas>
+</head>
+<body>
+<canvas id="fp-viewport" width="960" height="540" tabindex="0"></canvas>
 <br>
 <textarea id="fp-textarea" cols="80" rows="24">function draw(dt)
 	UiFont("regular.ttf", 24)
@@ -33,3 +37,5 @@ end
 <button id="fp-stop">Stop</button>
 <label><input id="fp-lua51" type="checkbox" checked> Spoof Lua 5.1</label>
 <label><input id="fp-strict" type="checkbox" checked> Strict mode</label>
+</body>
+</html>

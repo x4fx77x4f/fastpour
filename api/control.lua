@@ -16,11 +16,7 @@ return function(self, env)
 		-- TODO: what should happen if this is called before init?
 		return self.client.dt
 	end
-	-- InputLastPressedKey
-	-- InputPressed
-	-- InputReleased
-	-- InputDown
-	-- InputValue
+	-- input stuff is in input.lua
 	-- SetValue
 	-- PauseMenuButton
 	-- StartLevel

@@ -66,6 +66,7 @@ button_start:addEventListener("click", ypcall_wrap(function(self, event)
 	client.ctx = ctx
 	client.width = viewport.width
 	client.height = viewport.height
+	client.viewport = viewport
 	my_client:init()
 	local path = my_client.mod_path.."/options.lua"
 	my_client.filesystem:write(path, textarea.value)

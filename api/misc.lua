@@ -1,4 +1,5 @@
 return function(self, env)
+	local weak_assert_select_type = self._weak_assert_select_type
 	-- Shoot
 	-- Paint
 	-- MakeHole
@@ -23,8 +24,13 @@ return function(self, env)
 	-- DrawLine
 	-- DebugLine
 	-- DebugCross
-	-- DebugWatch
-	function env.DebugPrint(str)
+	function env.DebugWatch(...)
+		local key = weak_assert_select_type(self, 1, "string", nil, ...)
+		local value = select(2, ...)
+		-- TODO: unstub
+	end
+	function env.DebugPrint(...)
+		local str = weak_assert_select_type(self, 1, "string", nil, ...)
 		self.client:debug_print(str)
 	end
 end

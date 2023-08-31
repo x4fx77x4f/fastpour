@@ -111,6 +111,9 @@ script._weak_lookup = weak_lookup
 function script:_weak_assert_select_type(i, expected, level, ...)
 	local success, value = select_type(i, expected, ...)
 	if not success then
+		if type(expected) == "table" then
+			expected = expected[1]
+		end
 		if self.strict then
 			if level == nil then
 				level = 2
@@ -118,11 +121,7 @@ function script:_weak_assert_select_type(i, expected, level, ...)
 			level = level+1
 			error(string.format("bad argument #%d to '%s' (expected %s, got %s)", i, get_name(), expected, actual), level)
 		end
-		if type(expected) == "table" then
-			value = weak_lookup[expected[1]]
-		else
-			value = weak_lookup[expected]
-		end
+		value = weak_lookup[expected]
 	end
 	return value
 end
@@ -161,6 +160,7 @@ local cachebuster = fastpour.cachebuster
 script.libraries = {
 	--dofile("./api/parameters.lua"..cachebuster),
 	dofile("./api/control.lua"..cachebuster),
+	dofile("./api/input.lua"..cachebuster),
 	--dofile("./api/registry.lua"..cachebuster),
 	--dofile("./api/vector.lua"..cachebuster),
 	--dofile("./api/screen.lua"..cachebuster),

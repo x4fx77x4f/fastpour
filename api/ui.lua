@@ -46,7 +46,10 @@ return function(self, env)
 	end
 	-- UiWindow
 	-- UiSafeMargins
-	-- UiAlign
+	function env.UiAlign(...)
+		local alignment = weak_assert_select_type(self, 1, "string", nil, ...)
+		-- TODO: unstub
+	end
 	-- UiModalBegin
 	-- UiModalEnd
 	-- UiDisableInput
@@ -102,6 +105,7 @@ return function(self, env)
 		local w, h = 0, 0
 		local size = self.font_size
 		local i = 1
+		local lines = 0
 		while true do
 			local j = string.find(text, "\n", i, true)
 			local line
@@ -110,15 +114,18 @@ return function(self, env)
 			else
 				line = string.sub(text, i)
 			end
-			ctx:fillText(text, 0, 0)
+			ctx:fillText(line, 0, 0)
+			line = lines+1
+			ctx:translate(0, size)
 			local metrics = ctx:measureText(text)
 			w, h = math.max(w, metrics.width), h+size
 			if j == nil then
 				break
 			end
+			i = j+1
 		end
-		if move then
-			ctx:translate(0, h)
+		if not move then
+			ctx:translate(0, -h)
 		end
 		return w, h
 	end

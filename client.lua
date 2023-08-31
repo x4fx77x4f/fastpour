@@ -35,6 +35,7 @@ function client:init()
 	local mod_path = self.mod_path
 	assert(my_filesystem:mkdir(mod_path, true))
 	assert(my_filesystem:mkdir("data/ui/font/", true))
+	self.now = 0
 end
 function client:debug_clear()
 	local debug_log = self.debug_log
@@ -104,6 +105,12 @@ function client:tick(now)
 	local debug_log = self.debug_log
 	for i=1, self.DEBUG_LOG_MAX do
 		ctx:fillText(debug_log[i], 50, 670+(i-1)*18)
+	end
+	local input_state = script.input_state
+	for physical, state in pairs(input_state) do
+		if state == "released" then
+			input_state[physical] = nil
+		end
 	end
 end
 
